@@ -3,8 +3,6 @@ package dev.kishore.fakestoreapi.service;
 import dev.kishore.fakestoreapi.dto.CategoryDTO;
 import dev.kishore.fakestoreapi.dto.ProductDTO;
 import dev.kishore.fakestoreapi.model.Product;
-import dev.kishore.fakestoreapi.repository.ProductRepository;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
@@ -36,9 +34,6 @@ public class FakeStoreProductService implements ProductService{
         return fakeStoreProductDto != null ? fakeStoreProductDto.toProduct() : null;
     }
 
-
- @Autowired
- private ProductRepository productRepository;
 
     public List<Product> getAllProducts() {
         ProductDTO[] fakeStoreProductDtos = restTemplate.getForObject(

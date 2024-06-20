@@ -14,12 +14,9 @@ import java.util.List;
 @RequestMapping("/products")
 public class ProductController {
 
-    private final FakeStoreProductService productService;
-
     @Autowired
-    public ProductController(FakeStoreProductService productService) {
-        this.productService = productService;
-    }
+    private FakeStoreProductService productService;
+
 
     @GetMapping("/{id}")
     public ResponseEntity<Product> getProductById(@PathVariable Long id) {
@@ -37,16 +34,16 @@ public class ProductController {
 //        return ResponseEntity.ok(products);
 //    }
     public ResponseEntity<?> getAllProducts(
-            @RequestParam(required = false) Integer page,
-            @RequestParam(required = false) Integer size,
+            @RequestParam(defaultValue = "0") Integer page,
+            @RequestParam(defaultValue = "5") Integer size,
             @RequestParam(defaultValue = "id") String sortField,
             @RequestParam(defaultValue = "asc") String sortDirection) {
 
-         //If page and size are not provided, return all products
-        if (page == null || size == null) {
-            List<Product> products = productService.getAllProducts();
-            return ResponseEntity.ok(products);
-        }
+//         //If page and size are not provided, return all products
+//        if (page == null || size == null) {
+//            List<Product> products = productService.getAllProducts();
+//            return ResponseEntity.ok(products);
+//        }
 
         // Otherwise, return paginated products
         Page<Product> paginatedProducts = productService.getProducts(page, size, sortField, sortDirection);
