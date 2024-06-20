@@ -3,6 +3,12 @@ package dev.kishore.fakestoreapi.service;
 import dev.kishore.fakestoreapi.dto.CategoryDTO;
 import dev.kishore.fakestoreapi.dto.ProductDTO;
 import dev.kishore.fakestoreapi.model.Product;
+import dev.kishore.fakestoreapi.repository.ProductRepository;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
@@ -30,7 +36,10 @@ public class FakeStoreProductService implements ProductService{
         return fakeStoreProductDto != null ? fakeStoreProductDto.toProduct() : null;
     }
 
-    @Override
+
+ @Autowired
+ private ProductRepository productRepository;
+
     public List<Product> getAllProducts() {
         ProductDTO[] fakeStoreProductDtos = restTemplate.getForObject(
                 "https://fakestoreapi.com/products",
@@ -45,7 +54,34 @@ public class FakeStoreProductService implements ProductService{
 
         return List.of();
     }
+ public Page<Product> getProducts (int page, int size, String sortField, String sortDirection) {
+     // Fetch all products from the external API
+     ProductDTO[] fakeStoreProductDtos = restTemplate.getForObject(
+             "https://fakestoreapi.com/products",
+             ProductDTO[].class
+     );
 
+     if (fakeStoreProductDtos == null) {
+         return Page.empty();
+     }
+
+     List<Product> allProducts = Arrays.stream(fakeStoreProductDtos)
+             .map(ProductDTO::toProduct)
+             .collect(Collectors.toList());
+
+     // Sort the products
+     Sort sort = sortDirection.equalsIgnoreCase(Sort.Direction.ASC.name())
+             ? Sort.by(sortField).ascending()
+             : Sort.by(sortField).descending();
+
+     // Apply pagination
+     int start = Math.min((int) PageRequest.of(page, size).getOffset(), allProducts.size());
+     int end = Math.min((start + size), allProducts.size());
+
+     List<Product> paginatedProducts = allProducts.subList(start, end);
+
+     return new PageImpl<>(paginatedProducts, PageRequest.of(page, size, sort), allProducts.size());
+ }
     @Override
     public Product createProduct(Product product) {
         ProductDTO fs = new ProductDTO();

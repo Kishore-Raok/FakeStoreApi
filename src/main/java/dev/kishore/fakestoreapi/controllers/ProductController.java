@@ -3,6 +3,7 @@ package dev.kishore.fakestoreapi.controllers;
 import dev.kishore.fakestoreapi.model.Product;
 import dev.kishore.fakestoreapi.service.FakeStoreProductService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -31,9 +32,25 @@ public class ProductController {
     }
 
     @GetMapping
-    public ResponseEntity<List<Product>> getAllProducts() {
-        List<Product> products = productService.getAllProducts();
-        return ResponseEntity.ok(products);
+//    public ResponseEntity<List<Product>> getAllProducts() {
+//        List<Product> products = productService.getAllProducts();
+//        return ResponseEntity.ok(products);
+//    }
+    public ResponseEntity<?> getAllProducts(
+            @RequestParam(required = false) Integer page,
+            @RequestParam(required = false) Integer size,
+            @RequestParam(defaultValue = "id") String sortField,
+            @RequestParam(defaultValue = "asc") String sortDirection) {
+
+         //If page and size are not provided, return all products
+        if (page == null || size == null) {
+            List<Product> products = productService.getAllProducts();
+            return ResponseEntity.ok(products);
+        }
+
+        // Otherwise, return paginated products
+        Page<Product> paginatedProducts = productService.getProducts(page, size, sortField, sortDirection);
+        return ResponseEntity.ok(paginatedProducts);
     }
 
     @PostMapping
