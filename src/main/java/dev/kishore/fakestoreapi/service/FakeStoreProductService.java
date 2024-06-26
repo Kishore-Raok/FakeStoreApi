@@ -1,5 +1,6 @@
 package dev.kishore.fakestoreapi.service;
 
+import dev.kishore.fakestoreapi.configs.RedisTemplateConfig;
 import dev.kishore.fakestoreapi.dto.CategoryDTO;
 import dev.kishore.fakestoreapi.dto.ProductDTO;
 import dev.kishore.fakestoreapi.model.Product;
@@ -7,33 +8,52 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
+import java.time.Duration;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
 @Service
 public class FakeStoreProductService implements ProductService{
-    private final RestTemplate restTemplate;
+    private  RestTemplate restTemplate;
+    private RedisTemplate redisTemplate;
 
-    public FakeStoreProductService(RestTemplate restTemplate) {
+    public FakeStoreProductService(RestTemplate restTemplate, RedisTemplate redisTemplate) {
         this.restTemplate = restTemplate;
+        this.redisTemplate = redisTemplate;
     }
 
     @Override
     public Product getSingleProduct(Long productId) {
+        // Attempt to fetch product from Redis cache
+        Product productFromRedis = (Product) redisTemplate.opsForHash().get("PRODUCTS", "PRODUCT_" + productId);
+        if (productFromRedis != null) {
+            return productFromRedis;
+        }
+
+        // If product not found in cache, fetch from remote API
         ProductDTO fakeStoreProductDto = restTemplate.getForObject(
                 "https://fakestoreapi.com/products/" + productId,
                 ProductDTO.class
         );
 
-        System.out.printf(fakeStoreProductDto.toString());
+        // Check if the product fetched from the API is not null
+        if (fakeStoreProductDto != null) {
+            Product product = fakeStoreProductDto.toProduct();
+            // Store the product in Redis cache
+            redisTemplate.opsForHash().put("PRODUCTS", "PRODUCT_" + productId, product);
+            // Optionally set an expiration time for the cache
+            redisTemplate.expire("PRODUCTS", Duration.ofHours(1)); // Adjust duration as needed
+            return product;
+        }
 
-        return fakeStoreProductDto != null ? fakeStoreProductDto.toProduct() : null;
+        // Return null if the product was not found in the API
+        return null;
     }
-
 
     public List<Product> getAllProducts() {
         ProductDTO[] fakeStoreProductDtos = restTemplate.getForObject(
